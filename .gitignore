@@ -1,0 +1,13 @@
+# Visual Studio user files and workspace cache
+.vs/
+*.user
+*.suo
+
+# .NET build outputs
+**/bin/
+**/obj/
+
+# Common local artifacts
+TestResults/
+*.log
+

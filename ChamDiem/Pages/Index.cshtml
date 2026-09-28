@@ -1,0 +1,178 @@
+@page
+@using ChamDiem.Models
+@using System.Globalization
+@model IndexModel
+@{
+    ViewData["Title"] = "Chấm điểm sinh viên thực tập";
+    var selected = Model.SelectedStudent;
+    var displayScore = selected?.FinalScore ?? ChamDiem.Services.StudentService.CalculateFinalScore(
+        Model.Input.AttendanceScore, Model.Input.ReportScore, Model.Input.DefenseScore);
+    var isLocked = selected?.IsConfirmed == true;
+}
+
+<div class="page-shell">
+    <section class="hero card">
+        <div class="hero-copy">
+            <div class="eyebrow"><span>QUY TRÌNH UC11</span> Mã biểu mẫu: BM08-DT/ĐHQG</div>
+            <h1>Chấm điểm sinh viên thực tập</h1>
+            <p>Xem thông tin quá trình thực tập, báo cáo và đánh giá của doanh nghiệp để chấm điểm và đánh giá kết quả của sinh viên.</p>
+        </div>
+        <div class="hero-actions">
+            <button class="btn btn-soft" type="button" data-demo-action="Rubric: Chuyên cần 20%, Báo cáo 30%, Kết quả & Bảo vệ 50%.">▤ Hướng dẫn thang điểm</button>
+            <button class="btn btn-dark" type="button" data-demo-action="Xuất bảng điểm là chức năng mô phỏng trong UC11.">⇩ Xuất bảng điểm</button>
+        </div>
+        <div class="stepper" aria-label="Tiến trình thực tập">
+            <div><span>1</span>Đăng ký</div><div><span>2</span>Phê duyệt</div><div><span>3</span>Thực tập</div><div class="current"><span>4</span>Chấm điểm &amp; Đánh giá</div>
+        </div>
+        <div class="progress-track"><i></i></div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        <div class="alert success-alert" role="alert">✓ @Model.SuccessMessage</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="alert error-alert" role="alert">! @Model.ErrorMessage</div>
+    }
+
+    <section class="metrics" aria-label="Số liệu tổng quan">
+        <article class="metric card"><div><span>Tổng sinh viên</span><b>♙</b></div><strong>@Model.TotalStudents</strong><small>sinh viên</small></article>
+        <article class="metric card"><div><span>Đã hoàn thành chấm</span><b class="green">✓</b></div><strong>@Model.GradedStudents</strong><small>@((Model.TotalStudents == 0 ? 0 : Model.GradedStudents * 100m / Model.TotalStudents).ToString("0.0"))%</small></article>
+        <article class="metric card warning"><div><span>Đang chờ chấm điểm</span><b class="yellow">▣</b></div><strong>@Model.PendingStudents</strong><small>Cần duyệt</small></article>
+        <article class="metric card"><div><span>Điểm trung bình nhóm</span><b class="blue">▥</b></div><strong>@(Model.AverageScore?.ToString("0.00") ?? "--")</strong><small>/ 10</small></article>
+    </section>
+
+    <div class="workspace">
+        <section class="roster card">
+            <div class="section-heading"><h2>Hồ sơ phân công</h2><small>Học kỳ 1 - 2024</small></div>
+            <div class="filter-tabs" role="group" aria-label="Lọc trạng thái">
+                <a class="@(Model.Status == "all" ? "active" : "")" asp-page="/Index" asp-route-status="all" asp-route-search="@Model.Search">Tất cả</a>
+                <a class="@(Model.Status == "pending" ? "active" : "")" asp-page="/Index" asp-route-status="pending" asp-route-search="@Model.Search">Chờ chấm (@Model.PendingStudents)</a>
+                <a class="@(Model.Status == "graded" ? "active" : "")" asp-page="/Index" asp-route-status="graded" asp-route-search="@Model.Search">Đã chấm (@Model.GradedStudents)</a>
+            </div>
+            <form method="get" class="search-form">
+                <input type="hidden" name="status" value="@Model.Status" />
+                <span>⌕</span>
+                <input type="search" name="search" value="@Model.Search" placeholder="Tìm theo Tên hoặc MSSV..." aria-label="Tìm sinh viên" />
+                <button type="submit">Tìm</button>
+            </form>
+
+            <div class="student-list">
+                @if (Model.Students.Count == 0)
+                {
+                    <div class="empty-state"><strong>Không tìm thấy sinh viên phù hợp</strong><span>Hãy thử từ khóa hoặc bộ lọc khác.</span></div>
+                }
+                @foreach (var student in Model.Students)
+                {
+                    <a class="student-item @(student.Id == selected?.Id ? "selected" : "")"
+                       asp-page="/Index" asp-route-studentId="@student.Id" asp-route-search="@Model.Search" asp-route-status="@Model.Status">
+                        <span class="avatar">@student.Initials</span>
+                        <span class="student-main">
+                            <span class="student-top"><strong>@student.FullName</strong>
+                                @if (student.Status == GradingStatus.Graded)
+                                {
+                                    <em class="status graded">★ @student.FinalScore?.ToString("0.0") / 10</em>
+                                }
+                                else
+                                {
+                                    <em class="status pending">Chờ chấm điểm</em>
+                                }
+                            </span>
+                            <small>MSSV: @student.StudentCode • @student.ClassName</small>
+                            <span class="company">▦ @student.CompanyName <small>@(student.Status == GradingStatus.Graded ? "Đã chốt điểm" : $"Nộp: {student.SubmissionDate:dd/MM/yyyy}")</small></span>
+                        </span>
+                    </a>
+                }
+            </div>
+        </section>
+
+        <section class="details">
+            @if (selected is null)
+            {
+                <div class="card empty-detail"><strong>Chưa có hồ sơ để hiển thị</strong><span>Chọn một sinh viên trong danh sách để xem và chấm điểm.</span></div>
+            }
+            else
+            {
+                <article class="identity card">
+                    <div class="identity-person"><span class="avatar large">@selected.Initials</span><div><div><h2>@selected.FullName</h2><small>MSSV: @selected.StudentCode</small></div><p>@selected.Major • Lớp @selected.ClassName • @selected.InternshipTerm</p></div></div>
+                    <div class="supervisor"><small>Cán bộ hướng dẫn Doanh nghiệp</small><strong>@selected.CompanySupervisor</strong><span>@selected.CompanyName</span></div>
+                </article>
+
+                <article class="detail-card card">
+                    <header><h3><span class="icon blue">▧</span>1. BÁO CÁO THỰC TẬP &amp; SẢN PHẨM</h3><span class="positive">✓ Đã nộp đúng hạn</span></header>
+                    <div class="topic"><small>TÓM TẮT ĐỀ TÀI THỰC TẬP:</small><p>“@selected.Report.Topic”</p></div>
+                    <div class="file-grid">
+                        <button type="button" class="file-tile" data-demo-action="Đã mở bản xem trước báo cáo mẫu: @selected.Report.ReportFileName"><span>PDF</span><b>@selected.Report.ReportFileName</b><small>5.2 MB • Đạo văn: @selected.Report.PlagiarismRate?.ToString("0.0")%</small></button>
+                        <button type="button" class="file-tile" data-demo-action="Tải source code chỉ là thao tác mô phỏng: @selected.Report.SourceFileName"><span>ZIP</span><b>@selected.Report.SourceFileName</b><small>42.8 MB • Tệp đính kèm</small></button>
+                    </div>
+                </article>
+
+                <article class="detail-card card">
+                    <header><h3><span class="icon blue">♢</span>2. ĐÁNH GIÁ TỪ DOANH NGHIỆP</h3>@if(selected.EnterpriseEvaluation.IsDigitallySigned){<span class="signed">✓ Đã ký số điện tử</span>}</header>
+                    <div class="enterprise-scores">
+                        <div><small>Điểm Doanh nghiệp</small><strong>@selected.EnterpriseEvaluation.OverallScore.ToString("0.0")</strong><span>/ 10</span></div>
+                        <div><small>Ý thức &amp; Kỷ luật</small><strong>@selected.EnterpriseEvaluation.DisciplineScore.ToString("0.0")</strong><span>/ 10</span></div>
+                        <div><small>Chuyên môn &amp; Tiến độ</small><strong>@selected.EnterpriseEvaluation.ProfessionalScore.ToString("0.0")</strong><span>/ 10</span></div>
+                        <div><small>Kỹ năng làm việc nhóm</small><strong>@selected.EnterpriseEvaluation.TeamworkScore.ToString("0.0")</strong><span>/ 10</span></div>
+                    </div>
+                    <div class="company-comment"><small>NHẬN XÉT CỦA NGƯỜI HƯỚNG DẪN:</small><p>“@selected.EnterpriseEvaluation.Comment”</p></div>
+                </article>
+
+                <article class="detail-card grading-card card">
+                    <header><h3><span class="icon yellow">☷</span>3. NHẬP ĐIỂM ĐÁNH GIÁ CỦA GIẢNG VIÊN</h3><small>Thang điểm 10.0 (Bước 5-8 UC11)</small></header>
+                    @if (isLocked)
+                    {
+                        <div class="locked-note">🔒 Điểm đã được xác nhận. Phiếu chấm hiện ở chế độ chỉ đọc.</div>
+                    }
+                    <form method="post" id="gradingForm" novalidate>
+                        <input asp-for="Input.StudentId" type="hidden" />
+                        <input type="hidden" name="Search" value="@Model.Search" />
+                        <input type="hidden" name="Status" value="@Model.Status" />
+                        <div asp-validation-summary="ModelOnly" class="validation-summary"></div>
+                        <div class="score-grid">
+                            <label class="score-box">
+                                <span>Chuyên cần &amp; Ý thức <b>20%</b></span><small>Nhật ký thực tập &amp; tương tác</small>
+                                <span class="score-input"><input asp-for="Input.AttendanceScore" type="number" min="0" max="10" step="0.1" disabled="@isLocked" data-score /> <i>/ 10</i></span>
+                                <span asp-validation-for="Input.AttendanceScore" class="field-error"></span>
+                            </label>
+                            <label class="score-box">
+                                <span>Chất lượng báo cáo <b>30%</b></span><small>Cấu trúc, hàm lượng khoa học</small>
+                                <span class="score-input"><input asp-for="Input.ReportScore" type="number" min="0" max="10" step="0.1" disabled="@isLocked" data-score /> <i>/ 10</i></span>
+                                <span asp-validation-for="Input.ReportScore" class="field-error"></span>
+                            </label>
+                            <label class="score-box">
+                                <span>Kết quả &amp; Bảo vệ <b>50%</b></span><small>Demo sản phẩm &amp; vấn đáp</small>
+                                <span class="score-input"><input asp-for="Input.DefenseScore" type="number" min="0" max="10" step="0.1" disabled="@isLocked" data-score /> <i>/ 10</i></span>
+                                <span asp-validation-for="Input.DefenseScore" class="field-error"></span>
+                            </label>
+                        </div>
+
+                        <div class="final-result">
+                            <div><strong>Điểm tổng kết thực tập<br>(Tự động tính toán)</strong><small>Công thức: (Cần × 0.2) + (BC × 0.3) + (Bảo vệ × 0.5)</small></div>
+                            <div><small>Thang 10</small><strong id="finalScore">@(displayScore?.ToString("0.00", CultureInfo.InvariantCulture) ?? "--")</strong></div>
+                            <div><small>Xếp loại</small><strong class="classification" id="classification">@Model.Classification(displayScore)</strong></div>
+                        </div>
+
+                        <label class="feedback-label" for="Input_LecturerFeedback"><span>Nhận xét chi tiết của Giảng viên hướng dẫn <b>*</b></span><small>Tối thiểu 30 ký tự</small></label>
+                        <textarea asp-for="Input.LecturerFeedback" rows="4" minlength="30" disabled="@isLocked" placeholder="Nhập nhận xét về quá trình thực tập, báo cáo và phần bảo vệ..."></textarea>
+                        <div class="feedback-meta"><span asp-validation-for="Input.LecturerFeedback" class="field-error"></span><small><span id="feedbackCount">@(Model.Input.LecturerFeedback?.Length ?? 0)</span>/30 ký tự tối thiểu</small></div>
+
+                        @if (!isLocked)
+                        {
+                            <div class="validity-note" id="validityNote">Nhập đủ ba đầu điểm từ 0.0 đến 10.0 và nhận xét tối thiểu 30 ký tự để xác nhận.</div>
+                            <div class="form-actions">
+                                <button class="btn btn-soft" type="submit" asp-page-handler="SaveDraft">Lưu nháp</button>
+                                <button class="btn btn-primary" id="confirmButton" type="submit" asp-page-handler="ConfirmScore">✓ Lưu &amp; Xác nhận điểm (UC11)</button>
+                            </div>
+                        }
+                    </form>
+                </article>
+            }
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

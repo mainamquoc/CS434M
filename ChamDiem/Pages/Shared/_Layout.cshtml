@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Cổng thực tập</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <aside class="sidebar" aria-label="Điều hướng chính">
+        <a class="brand" asp-page="/Index">
+            <span class="brand-mark">◇</span>
+            <span><strong>CỔNG THỰC TẬP</strong><small>Học kỳ 1 - 2024</small></span>
+        </a>
+        <nav class="side-nav">
+            <a href="#" data-demo-action="Bảng điều khiển đang được mô phỏng trong bản demo UC11."><span>▦</span>Bảng điều khiển</a>
+            <a href="#" data-demo-action="Chức năng đăng ký và xét duyệt nằm ngoài phạm vi UC11."><span>▣</span>Đăng ký &amp; Xét duyệt</a>
+            <a href="#" data-demo-action="Danh sách thực tập đang được mô phỏng trong bản demo UC11."><span>▤</span>Danh sách thực tập</a>
+            <a class="active" asp-page="/Index"><span>☷</span>Chấm điểm &amp; Báo cáo</a>
+            <a href="#" data-demo-action="Đã mở hướng dẫn sử dụng bản demo."><span>?</span>Cài đặt &amp; Hướng dẫn</a>
+        </nav>
+        <a class="logout" href="#" data-demo-action="Đăng xuất chỉ là chức năng mô phỏng."><span>↪</span>Đăng xuất</a>
+    </aside>
+
+    <header class="topbar">
+        <div class="system-name">HỆ THỐNG QUẢN TRỊ ĐÀO TẠO <span>Học kỳ 1 - 2024</span></div>
+        <div class="lecturer">
+            <button class="icon-button" type="button" data-demo-action="Bạn không có thông báo mới." aria-label="Thông báo">●</button>
+            <span><strong>Phan Long</strong><small>Giảng viên hướng dẫn</small></span>
+            <span class="avatar small">NH</span>
+        </div>
+    </header>
+
+    <main class="app-main" role="main">
+        @RenderBody()
+    </main>
+
+    <div class="demo-toast" id="demoToast" role="status" aria-live="polite"></div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
